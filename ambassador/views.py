@@ -2,7 +2,7 @@ from rest_framework.response import Response
 from ambassador.serializer import LinkSerializer, ProductSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from core.models import Link, Order, Product
+from core.models import Link, Order, Product, User
 from django.shortcuts import render
 from rest_framework.views import APIView
 from django.core.cache import cache
@@ -103,3 +103,20 @@ class StatsAPIView(APIView):
             'count': len(orders),
             'revenue': sum(o.ambassador_revenue for o in orders)
         }
+
+
+class RankingAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    
+    def get(self, request):
+        ambassadors = User.objects.filter(is_ambassador=True)
+
+        response = list({
+            'name': a.name,
+            'revenue': a.revenue
+        } for a in ambassadors)
+
+        response.sort(key=lambda x:x['revenue'], reverse=True)
+        return Response(response)
