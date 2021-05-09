@@ -8,6 +8,7 @@ from core.models import Link, User, Product, Order
 from rest_framework import generics, mixins
 # Create your views here.
 from common.authentication import JWTAuthentication
+from django.core.cache import cache
 
 class AmbassadorAPIView(APIView):
     authentication_classes = [JWTAuthentication]
@@ -33,13 +34,28 @@ class ProductGenericAPIView(generics.GenericAPIView, mixins.ListModelMixin, mixi
         return self.list(request)
 
     def post(self, request):
-        return self.create(request)
+        response = self.create(request)
+        for key in cache.keys('*'):
+            if 'products_frontend' in key:
+                cache.delete(key)
+        cache.delete('products_backend')
+        return response
     
     def put(self, request, pk=None):
-        return self.partial_update(request, pk)
+        response = self.partial_update(request, pk)
+        for key in cache.keys('*'):
+            if 'products_frontend' in key:
+                cache.delete(key)
+        cache.delete('products_backend')
+        return response
     
     def delete(self, request, pk=None):
-        return self.destroy(request, pk)
+        response = self.destroy(request, pk)
+        for key in cache.keys('*'):
+            if 'products_frontend' in key:
+                cache.delete(key)
+        cache.delete('products_backend')        
+        return response
 
 class LinkAPIView(APIView):
     authentication_classes = [JWTAuthentication]

@@ -119,3 +119,9 @@
     docker-compose 생성
     requirements에추가
     ambassador/views에서 사용
+    cachepage로 캐시를 설정하면 레디스에서 key값이 다르게 나온다 
+    내가 cache_page(time, key_prefix='products_frontend')라고해도 해시값들이 붙어서 나오기때문에
+        for key in cache.keys('*'):
+            if 'products_frontend' in key:
+                cache.delete(key)
+    이런 코드를 사용해야한다
