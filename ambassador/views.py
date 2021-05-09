@@ -10,6 +10,7 @@ import time
 from common.authentication import JWTAuthentication
 from rest_framework.permissions import IsAuthenticated
 import math, random, string
+from django_redis import get_redis_connection
 # Create your views here.
 class ProductFrontendAPIView(APIView):
     
@@ -111,12 +112,10 @@ class RankingAPIView(APIView):
 
     
     def get(self, request):
-        ambassadors = User.objects.filter(is_ambassador=True)
+        conn = get_redis_connection("default")
 
-        response = list({
-            'name': a.name,
-            'revenue': a.revenue
-        } for a in ambassadors)
+        rankings = conn.zrevrangebyscore('rankings', min=0, max=100000, withscores=True)
 
-        response.sort(key=lambda x:x['revenue'], reverse=True)
-        return Response(response)
+        return Response({
+            r[0].decode('utf-8'):r[1] for r in rankings
+        })

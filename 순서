@@ -125,3 +125,7 @@
             if 'products_frontend' in key:
                 cache.delete(key)
     이런 코드를 사용해야한다
+
+# Redis에 ranking까지 캐싱
+    core/management/commands/update_rankings.py
+    backend 도커에 접속해서 실행
