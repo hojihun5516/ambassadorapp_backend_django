@@ -1,0 +1,121 @@
+# 코어 앱 만들어줌, 
+    python manage.py startapp core
+    test.py, views.py제거
+    models.py 수정
+
+# docker, docker-compose db까지만들기
+
+# settings.py 수정
+    INSTALLED_APP추가
+        rest_framework
+        core
+
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': 'ambassador',
+            'USER': 'root',
+            'PASSWORD': 'root',
+            'HOST': 'db',
+            'PORT': 3306
+        }
+    }
+
+    AUTH_USER_MODEL = 'core.User'
+
+# docker-compose exec backend sh 로 접속하고
+    python3 manage.py makemigrations
+
+# core/management/commands/waitfor_db.py 만들고 dockerfile 수정
+
+# 어드민 모델 파일 작성하고 도커에 접속
+    docker-compose exec backend sh
+    python manage.py createsuperuser --email=admin@admin.com
+    권한이없으면 디비에가서 is_superuser = 1로 변경해줌 (아마 무시해도됨)
+
+# admin.py 만들었음
+    이해가잘안가..
+
+# python manage.py startapp administrator
+    setting에 administrator 추가
+    폴더에 admin models tests 제거
+
+# python manage.py startapp common
+    common폴더에 test admin model제거 
+
+# administartor, common 
+    마이그레이션 폴더 제거
+    urls.py 파일 추가
+
+# common serializers 
+
+# common urls
+    입력하고 2개생성
+    {
+    "first_name":"a",
+    "last_name":"a",
+    "email":"a@a2.com",
+    "password":"a",
+    "password_confirm":"a"
+    }
+     email a@a.com
+
+# common Login
+    urls에 추가
+    views에 로그인에이피아이 추가
+
+# JWT
+    requirements에 PyJWT추가
+    settings.py에 cors 추가
+        INSTALLED_APP추가
+        middleware추가
+        CORS_ORIGIN_ALLOW_ALL =True
+        CORS_ALLOW_CREDENTIALS = True
+    authentication.py 만들고, views에 jwt전달
+    REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES':[
+        'rest_framework.authentication.TokenAuthentication'
+        ]
+    }
+
+# authentication에 staticmethod추가하고 self제거
+
+# Faker 6.6.1
+    core/management/commands/populate_ambassadors
+    만들고 도커에 접속해서 
+    python manage.py populate_ambassadors
+
+# Product model 생성
+    core_models Product 생성
+    python manage.py makemigrations
+    python manage.py migrate
+
+# LINK
+    core model 생성
+    python manage.py makemigrations
+    python mange.py migrate
+
+
+
+##### 2차강의
+
+# ambassador
+    python manage.py startapp ambassador
+    ambassador에서 지움
+        admin
+        makemigrations
+        models
+        tests
+    common authentication
+        ambassador와 addmin이 같은 함수를 사용한다 
+
+# revenue
+
+
+# 한개의 클래스에 serializer를 여러개 만들어서 사용할 수 있다
+
+# Redis
+    settings에 추가
+    docker-compose 생성
+    requirements에추가
+    ambassador/views에서 사용
