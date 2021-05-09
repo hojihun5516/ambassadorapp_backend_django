@@ -1,13 +1,15 @@
 from rest_framework.response import Response
-from ambassador.serializer import ProductSerializer
+from ambassador.serializer import LinkSerializer, ProductSerializer
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
-from core.models import Product
+from core.models import Link, Order, Product
 from django.shortcuts import render
 from rest_framework.views import APIView
 from django.core.cache import cache
 import time
-import math
+from common.authentication import JWTAuthentication
+from rest_framework.permissions import IsAuthenticated
+import math, random, string
 # Create your views here.
 class ProductFrontendAPIView(APIView):
     
@@ -63,3 +65,41 @@ class ProductBackendAPIView(APIView):
                 'last_page': math.ceil(total/per_page)
             }
         })
+
+
+class LinkAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        serializer = LinkSerializer(data={
+            'user':user.id,
+            'code': ''.join(random.choices(string.ascii_lowercase + string.digits, k=6)),
+            'products': request.data['products']
+        })
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response(serializer.data)
+
+class StatsAPIView(APIView):
+    authentication_classes = [JWTAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+
+        links = Link.objects.filter(user_id=user.id)
+
+
+        return Response([self.format(link) for link in links])
+
+    def format(self, link):
+        orders = Order.objects.filter(code=link.code, complete=1)
+
+        return {
+            'code': link.code,
+            'count': len(orders),
+            'revenue': sum(o.ambassador_revenue for o in orders)
+        }
