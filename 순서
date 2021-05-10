@@ -129,3 +129,7 @@
 # Redis에 ranking까지 캐싱
     core/management/commands/update_rankings.py
     backend 도커에 접속해서 실행
+
+# checkout 앱생성
+    python manage.py startapp checkout
+    migrations admin models tests 제거

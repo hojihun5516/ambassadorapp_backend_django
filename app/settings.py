@@ -40,7 +40,9 @@ INSTALLED_APPS = [
     'rest_framework',
     'core',
     'corsheaders',
-    'administrator'
+    'administrator',
+    'ambassador',
+    'checkout'
 ]
 
 MIDDLEWARE = [
