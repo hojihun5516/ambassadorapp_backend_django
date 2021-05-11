@@ -1,3 +1,4 @@
+import stripe
 from django.db import transaction
 from django.shortcuts import render
 
@@ -9,14 +10,14 @@ from rest_framework.views import APIView
 
 from checkout.serializer import LinkSerializer
 from core.models import Link, Order, Product, OrderItem
-
+import uuid
+from django.core.mail import send_mail
 
 class LinkAPIView(APIView):
     def get(self, _, code=''):
         link = Link.objects.filter(code=code).first()
         serializer = LinkSerializer(link)
         return Response(serializer.data)
-
 
 class OrderAPIView(APIView):
 
@@ -41,6 +42,8 @@ class OrderAPIView(APIView):
             order.zip = data['zip']
             order.save()
 
+            line_items = []
+
             for item in data['products']:
                 product = Product.objects.filter(pk=item['product_id']).first()
                 quantity = decimal.Decimal(item['quantity'])
@@ -53,9 +56,32 @@ class OrderAPIView(APIView):
                 order_item.ambassador_revenue = decimal.Decimal(.1) * product.price * quantity
                 order_item.admin_revenue = decimal.Decimal(.9) * product.price * quantity
                 order_item.save()
-            return Response({
-                'message': 'success'
-            })
+                line_items.append({
+                    'name': product.title,
+                    'description': product.description,
+                    'images': [
+                        product.image
+                    ],
+                    'amount': int(100 * product.price),
+                    'currency': 'usd',
+                    'quantity': quantity
+                })
+
+            # stripe.api_key = 'sk_test_51IpjqyGz9cuVNacM9IMoAXELifNSOKbrx1HtsR8bTHY6Y5M1zBM0B442C77LCauRnJC0to9d5GksOkkW91qJt3cY00MxvAY40a'
+            # source = stripe.checkout.Session.create(
+            #     success_url='http://localhost:5000/success?source={CHECKOUT_SESSION_ID}',
+            #     cancel_url='http://localhost:5000/error',
+            #     payment_method_types=['card'],
+            #     line_items=line_items
+            # )
+            # order.transaction_id = source['id']
+           
+            # stripe가 계좌인증때문에 임시로 uuid사용
+            order.transaction_id = uuid.uuid4()
+            order.save()
+
+            # return Response(source)
+            return Response({"message": "success", "order_id": order.transaction_id})
         except Exception:
             transaction.rollback()
 
@@ -64,4 +90,31 @@ class OrderAPIView(APIView):
         })
 
 
+class OrderConfirmAPIView(APIView):
+    def post(self,request):
+        order = Order.objects.filter(transaction_id=request.data['source']).first()
+        if not order:
+            raise exceptions.APIException('Order not found!')
+        order.complete = 1
+        order.save()
 
+        # Admin Email
+        send_mail(
+            subject="An Order has been completed",
+            message="Order #" + str(order.id) + "with a total of $" + str(order.admin_revenue) + 'has been completed!',
+            from_email="from@email.com",
+            recipient_list=['admin@admin.com']
+
+        )
+
+        # Ambassador Email
+        send_mail(
+            subject="An Order has been completed",
+            message="You earned $" + str(order.ambassador_revenue) + "from the link #" + str(order.code),
+            from_email="from@email.com",
+            recipient_list=[order.ambassador_email]
+        )
+
+        return Response({
+            "message":"success"
+        })

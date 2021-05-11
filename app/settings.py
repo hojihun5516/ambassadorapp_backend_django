@@ -142,6 +142,8 @@ USE_L10N = True
 USE_TZ = True
 
 
+
+
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.2/howto/static-files/
 
@@ -158,3 +160,11 @@ AUTH_USER_MODEL = 'core.User'
 CORS_ORIGIN_ALLOW_ALL =True
 #쿠키심기위함
 CORS_ALLOW_CREDENTIALS = True
+
+
+# EMAIL_HOST = 'docker.for.mac.localhost'
+EMAIL_HOST = "mailhog"
+EMAIL_PORT = '1025'
+EMAIL_HOST_USER = ''
+EMAIL_HOST_PASSWORD = ''
+EMAIL_USE_TLS = False

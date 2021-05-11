@@ -9,6 +9,7 @@ services:
         depends_on:
             - db
             - redis
+            - mailhog
 
     db:
         image: mysql:5.7.22
@@ -27,3 +28,16 @@ services:
         image: redis
         ports:
             - 6379:6379
+
+    mailhog:
+        image: mailhog/mailhog
+        ports:
+            - 8025:8025
+            - 1025:1025
+        environment:
+            MAIL_MAILER: smtp
+            MAIL_HOST: 127.0.0.1
+            MAIL_PORT: 1025
+            MAIL_USERNAME: null
+            MAIL_PASSWORD: null
+            MAIL_ENCRYPTION: null

@@ -133,3 +133,6 @@
 # checkout 앱생성
     python manage.py startapp checkout
     migrations admin models tests 제거
+
+
+ # MainHog
