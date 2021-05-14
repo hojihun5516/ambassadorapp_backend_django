@@ -1,23 +1,22 @@
 import stripe
 from django.db import transaction
-from django.shortcuts import render
-
-# Create your views here.
-import decimal
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from checkout.serializer import LinkSerializer
+from .serializers import LinkSerializer
 from core.models import Link, Order, Product, OrderItem
-import uuid
+import decimal
 from django.core.mail import send_mail
 
+
 class LinkAPIView(APIView):
+
     def get(self, _, code=''):
         link = Link.objects.filter(code=code).first()
         serializer = LinkSerializer(link)
         return Response(serializer.data)
+
 
 class OrderAPIView(APIView):
 
@@ -35,8 +34,8 @@ class OrderAPIView(APIView):
             order.ambassador_email = link.user.email
             order.first_name = data['first_name']
             order.last_name = data['last_name']
-            order.address = data['address']
             order.email = data['email']
+            order.address = data['address']
             order.country = data['country']
             order.city = data['city']
             order.zip = data['zip']
@@ -56,6 +55,7 @@ class OrderAPIView(APIView):
                 order_item.ambassador_revenue = decimal.Decimal(.1) * product.price * quantity
                 order_item.admin_revenue = decimal.Decimal(.9) * product.price * quantity
                 order_item.save()
+
                 line_items.append({
                     'name': product.title,
                     'description': product.description,
@@ -67,54 +67,51 @@ class OrderAPIView(APIView):
                     'quantity': quantity
                 })
 
-            # stripe.api_key = 'sk_test_51IpjqyGz9cuVNacM9IMoAXELifNSOKbrx1HtsR8bTHY6Y5M1zBM0B442C77LCauRnJC0to9d5GksOkkW91qJt3cY00MxvAY40a'
-            # source = stripe.checkout.Session.create(
-            #     success_url='http://localhost:5000/success?source={CHECKOUT_SESSION_ID}',
-            #     cancel_url='http://localhost:5000/error',
-            #     payment_method_types=['card'],
-            #     line_items=line_items
-            # )
-            # order.transaction_id = source['id']
-           
-            # stripe가 계좌인증때문에 임시로 uuid사용
-            order.transaction_id = uuid.uuid4()
+            stripe.api_key = 'sk_test_51H0wSsFHUJ5mamKOVQx6M8kihCIxpBk6DzOhrf4RrpEgqh2bfpI7vbsVu2j5BT0KditccHBnepG33QudcrtBUHfv00Bbw1XXjL'
+
+            source = stripe.checkout.Session.create(
+                success_url='http://localhost:5000/success?source={CHECKOUT_SESSION_ID}',
+                cancel_url='http://localhost:5000/error',
+                payment_method_types=['card'],
+                line_items=line_items
+            )
+
+            order.transaction_id = source['id']
             order.save()
 
-            # return Response(source)
-            return Response({"message": "success", "order_id": order.transaction_id})
+            return Response(source)
         except Exception:
             transaction.rollback()
 
         return Response({
-            'message': 'Error occured'
+            'message': "Error occurred"
         })
 
 
 class OrderConfirmAPIView(APIView):
-    def post(self,request):
+    def post(self, request):
         order = Order.objects.filter(transaction_id=request.data['source']).first()
         if not order:
             raise exceptions.APIException('Order not found!')
+
         order.complete = 1
         order.save()
 
         # Admin Email
         send_mail(
-            subject="An Order has been completed",
-            message="Order #" + str(order.id) + "with a total of $" + str(order.admin_revenue) + 'has been completed!',
-            from_email="from@email.com",
+            subject='An Order has been completed',
+            message='Order #' + str(order.id) + 'with a total of $' + str(order.admin_revenue) + ' has been completed!',
+            from_email='from@email.com',
             recipient_list=['admin@admin.com']
-
         )
 
-        # Ambassador Email
         send_mail(
-            subject="An Order has been completed",
-            message="You earned $" + str(order.ambassador_revenue) + "from the link #" + str(order.code),
-            from_email="from@email.com",
+            subject='An Order has been completed',
+            message='You earned $' + str(order.ambassador_revenue) + ' from the link #' + order.code,
+            from_email='from@email.com',
             recipient_list=[order.ambassador_email]
         )
 
         return Response({
-            "message":"success"
+            'message': 'success'
         })
